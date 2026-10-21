@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#090b16" />
+    <meta
+      name="description"
+      content="up.you — uma forma simples e temporária de compartilhar arquivos."
+    />
+    <title>up.you — Upload temporário</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+            },
+            colors: {
+              ink: "#090b16",
+              panel: "#111423",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        background:
+          radial-gradient(ellipse at 50% -15%, rgba(88, 70, 220, 0.18), transparent 45%),
+          #090b16;
+      }
+
+      .grid-glow {
+        background-image: linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+        background-size: 48px 48px;
+        mask-image: linear-gradient(to bottom, black, transparent 82%);
+      }
+
+      .drop-active {
+        border-color: #a78bfa !important;
+        background-color: rgba(139, 92, 246, 0.1) !important;
+      }
+
+      @keyframes progress {
+        from { width: 0; }
+        to { width: 100%; }
+      }
+
+      .progress-fill {
+        animation: progress 1.15s ease-out forwards;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen overflow-x-hidden font-sans text-slate-100 antialiased">
+    <div class="grid-glow pointer-events-none fixed inset-0 -z-10"></div>
+
+    <header class="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6 sm:px-8">
+      <a href="#" class="flex items-center gap-2.5" aria-label="up.you início">
+        <span class="grid h-9 w-9 place-items-center rounded-xl bg-violet-500 text-white shadow-lg shadow-violet-500/25">
+          <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" aria-hidden="true">
+            <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </span>
+        <span class="text-xl font-semibold tracking-tight">up<span class="text-violet-400">.</span>you</span>
+      </a>
+      <div class="hidden items-center gap-2 rounded-full border border-white/10 bg-white/[0.035] px-3.5 py-2 text-xs text-slate-400 sm:flex">
+        <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]"></span>
+        Compartilhamento simples. Sem complicação.
+      </div>
+      <a href="#arquivos" class="text-sm text-slate-400 transition hover:text-white">Meus arquivos</a>
+    </header>
+
+    <main class="mx-auto w-full max-w-4xl px-6 pb-16 pt-12 sm:px-8 sm:pt-20">
+      <section class="text-center">
+        <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-violet-400/20 bg-violet-400/[0.07] px-3.5 py-1.5 text-xs font-medium text-violet-200">
+          <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" aria-hidden="true">
+            <path d="M10 2.5 12 7l4.5 2-4.5 2-2 4.5L8 11l-4.5-2L8 7l2-4.5Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.4" />
+          </svg>
+          Seus arquivos, só pelo tempo que você precisa
+        </div>
+        <h1 class="text-4xl font-semibold tracking-tight text-white sm:text-6xl">
+          Envie. Compartilhe.<br class="sm:hidden" />
+          <span class="bg-gradient-to-r from-violet-300 via-fuchsia-300 to-cyan-300 bg-clip-text text-transparent">Desapareça.</span>
+        </h1>
+        <p class="mx-auto mt-5 max-w-xl text-base leading-7 text-slate-400 sm:text-lg">
+          Envie seus arquivos e encontre tudo em uma biblioteca temporária. Simples, organizado e sem cadastro.
+        </p>
+      </section>
+
+      <section class="mt-10 rounded-3xl border border-white/[0.09] bg-panel/90 p-4 shadow-2xl shadow-black/30 backdrop-blur sm:mt-12 sm:p-7" aria-label="Enviar arquivos">
+        <div
+          id="dropzone"
+          class="group relative flex min-h-56 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-slate-600/70 bg-white/[0.018] px-6 py-9 text-center transition duration-200 hover:border-violet-400/70 hover:bg-violet-400/[0.035]"
+          role="button"
+          tabindex="0"
+          aria-label="Selecionar ou arrastar arquivos para enviar"
+        >
+          <input id="fileInput" name="files" type="file" multiple class="sr-only" />
+          <span class="mb-4 grid h-14 w-14 place-items-center rounded-2xl border border-violet-300/15 bg-violet-400/10 text-violet-300 transition group-hover:scale-105 group-hover:bg-violet-400/15">
+            <svg viewBox="0 0 24 24" class="h-7 w-7" fill="none" aria-hidden="true">
+              <path d="M12 15V4m0 0L8 8m4-4 4 4M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+          <p class="text-base font-medium text-slate-100">Solte seus arquivos aqui</p>
+          <p class="mt-1.5 text-sm text-slate-500">ou <span class="text-violet-300 underline underline-offset-4">clique para procurar</span> no seu dispositivo</p>
+          <p class="mt-4 text-xs text-slate-600">Qualquer formato <span class="mx-1.5">·</span> Até 2 GB por arquivo</p>
+        </div>
+
+        <div id="fileSection" class="mt-5 hidden">
+          <div class="mb-3 flex items-center justify-between">
+            <h2 class="text-sm font-medium text-slate-200">Arquivos selecionados</h2>
+            <button id="clearButton" type="button" class="text-xs text-slate-500 transition hover:text-slate-200">Limpar tudo</button>
+          </div>
+          <ul id="fileList" class="space-y-2"></ul>
+          <div class="mt-3 flex items-center justify-between text-xs text-slate-500">
+            <span id="fileCount">0 arquivos</span>
+            <span id="totalSize">0 B</span>
+          </div>
+        </div>
+
+        <div class="mt-5 grid gap-3 sm:grid-cols-[1fr_auto]">
+          <label class="flex min-h-12 items-center justify-between rounded-xl border border-white/[0.08] bg-white/[0.025] px-4">
+            <span class="flex items-center gap-2.5 text-sm text-slate-400">
+              <svg viewBox="0 0 20 20" class="h-4 w-4 text-slate-500" fill="none" aria-hidden="true">
+                <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.4" />
+                <path d="M10 6v4l2.5 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+              </svg>
+              Os arquivos expiram em
+            </span>
+            <select id="expiration" class="bg-transparent text-sm font-medium text-slate-200 outline-none">
+              <option value="3600" class="bg-panel">1 hora</option>
+              <option value="86400" class="bg-panel" selected>24 horas</option>
+              <option value="604800" class="bg-panel">7 dias</option>
+            </select>
+          </label>
+          <button id="uploadButton" type="button" disabled class="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-violet-500 px-6 text-sm font-semibold text-white shadow-lg shadow-violet-900/20 transition hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none">
+            <span id="buttonLabel">Salvar arquivos</span>
+            <svg id="buttonIcon" viewBox="0 0 20 20" class="h-4 w-4" fill="none" aria-hidden="true">
+              <path d="M10 4v11m0 0-4-4m4 4 4-4M4 16v1h12v-1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+        </div>
+
+        <p id="feedback" class="mt-3 hidden text-sm" role="status" aria-live="polite"></p>
+      </section>
+
+      <div class="mt-5 flex items-start gap-2.5 px-1 text-xs leading-5 text-slate-500">
+        <svg viewBox="0 0 20 20" class="mt-0.5 h-4 w-4 shrink-0 text-slate-600" fill="none" aria-hidden="true">
+          <path d="M10 2.5 3.5 5v4.6c0 4 2.8 6.5 6.5 7.9 3.7-1.4 6.5-3.9 6.5-7.9V5L10 2.5Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" />
+          <path d="M7.5 10 9 11.5l3.5-3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <p><strong class="font-medium text-slate-400">Armazenamento local.</strong> Os arquivos ficam neste navegador e dispositivo. Para compartilhar com outros visitantes, será necessário conectar um servidor.</p>
+      </div>
+
+      <section id="arquivos" class="mt-16 border-t border-white/[0.07] pt-9">
+        <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p class="text-xs font-medium uppercase tracking-[0.18em] text-violet-300">Sua biblioteca</p>
+            <h2 class="mt-2 text-2xl font-semibold tracking-tight text-white">Arquivos disponíveis</h2>
+            <p class="mt-1 text-sm text-slate-500">Os itens são identificados pelo nome original do arquivo.</p>
+          </div>
+          <label class="relative block sm:w-64">
+            <span class="sr-only">Buscar arquivos</span>
+            <svg viewBox="0 0 20 20" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" fill="none" aria-hidden="true">
+              <circle cx="8.8" cy="8.8" r="5.8" stroke="currentColor" stroke-width="1.4" />
+              <path d="m13 13 4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+            </svg>
+            <input id="searchInput" type="search" placeholder="Buscar por nome..." class="h-10 w-full rounded-xl border border-white/[0.08] bg-white/[0.025] pl-9 pr-3 text-sm text-slate-200 outline-none placeholder:text-slate-600 focus:border-violet-400/50" />
+          </label>
+        </div>
+        <div class="mb-4 flex items-center justify-between text-xs text-slate-500">
+          <span id="libraryCount" aria-live="polite">Carregando biblioteca...</span>
+          <button id="clearExpiredButton" type="button" class="hidden text-slate-500 transition hover:text-rose-300">Limpar arquivos expirados</button>
+        </div>
+        <div id="libraryGrid" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-live="polite"></div>
+        <div id="emptyLibrary" class="hidden rounded-2xl border border-dashed border-white/[0.09] px-6 py-12 text-center">
+          <span class="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-white/[0.04] text-slate-500">
+            <svg viewBox="0 0 20 20" class="h-5 w-5" fill="none" aria-hidden="true">
+              <path d="M5.5 2.5h6L15 6v10.1a1.4 1.4 0 0 1-1.4 1.4H5.5a1.4 1.4 0 0 1-1.4-1.4V3.9a1.4 1.4 0 0 1 1.4-1.4Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" />
+              <path d="M11.5 2.8v3.7h3.2" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" />
+            </svg>
+          </span>
+          <p id="emptyTitle" class="mt-4 text-sm font-medium text-slate-300">Sua biblioteca está vazia</p>
+          <p id="emptyDescription" class="mt-1 text-xs text-slate-500">Envie arquivos para eles aparecerem aqui.</p>
+        </div>
+      </section>
+
+      <section id="como-funciona" class="mt-16 border-t border-white/[0.07] pt-9">
+        <div class="mb-6 flex items-center justify-between">
+          <h2 class="text-sm font-medium text-slate-200">Seus arquivos, organizados por tempo limitado</h2>
+          <span class="hidden text-xs text-slate-600 sm:block">Rápido. Simples. Temporário.</span>
+        </div>
+        <div class="grid gap-3 sm:grid-cols-3">
+          <article class="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
+            <span class="grid h-9 w-9 place-items-center rounded-xl bg-cyan-400/10 text-cyan-300">
+              <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" aria-hidden="true">
+                <path d="M10 15V4m0 0L6 8m4-4 4 4M4 13v3h12v-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </span>
+            <h3 class="mt-3 text-sm font-medium text-slate-200">Envie com facilidade</h3>
+            <p class="mt-1 text-xs leading-5 text-slate-500">Arraste seus arquivos ou selecione direto do dispositivo.</p>
+          </article>
+          <article class="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
+            <span class="grid h-9 w-9 place-items-center rounded-xl bg-violet-400/10 text-violet-300">
+              <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" aria-hidden="true">
+                <path d="M8 12 12 8m-5.5 6.5-1 1a3 3 0 0 1-4.2-4.2l3-3a3 3 0 0 1 4.2 0m2-2 1-1a3 3 0 0 1 4.2 4.2l-3 3a3 3 0 0 1-4.2 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+              </svg>
+            </span>
+            <h3 class="mt-3 text-sm font-medium text-slate-200">Compartilhe um link</h3>
+            <p class="mt-1 text-xs leading-5 text-slate-500">Encontre e baixe seus arquivos direto da biblioteca.</p>
+          </article>
+          <article class="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
+            <span class="grid h-9 w-9 place-items-center rounded-xl bg-fuchsia-400/10 text-fuchsia-300">
+              <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" aria-hidden="true">
+                <circle cx="10" cy="10" r="6.5" stroke="currentColor" stroke-width="1.3" />
+                <path d="M10 6.5v3.8l2.2 1.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+              </svg>
+            </span>
+            <h3 class="mt-3 text-sm font-medium text-slate-200">Expira automaticamente</h3>
+            <p class="mt-1 text-xs leading-5 text-slate-500">Escolha por quanto tempo seu link deve ficar disponível.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-2 border-t border-white/[0.06] px-6 py-6 text-xs text-slate-600 sm:flex-row sm:px-8">
+      <span>© 2026 up.you <span class="mx-1.5">·</span> Compartilhe por tempo limitado.</span>
+      <span>Uma experiência simples, do começo ao fim.</span>
+    </footer>
+
+    <script>
+      const dropzone = document.getElementById("dropzone");
+      const fileInput = document.getElementById("fileInput");
+      const fileSection = document.getElementById("fileSection");
+      const fileList = document.getElementById("fileList");
+      const fileCount = document.getElementById("fileCount");
+      const totalSize = document.getElementById("totalSize");
+      const uploadButton = document.getElementById("uploadButton");
+      const buttonLabel = document.getElementById("buttonLabel");
+      const buttonIcon = document.getElementById("buttonIcon");
+      const clearButton = document.getElementById("clearButton");
+      const feedback = document.getElementById("feedback");
+      const expiration = document.getElementById("expiration");
+      const libraryGrid = document.getElementById("libraryGrid");
+      const libraryCount = document.getElementById("libraryCount");
+      const emptyLibrary = document.getElementById("emptyLibrary");
+      const emptyTitle = document.getElementById("emptyTitle");
+      const emptyDescription = document.getElementById("emptyDescription");
+      const searchInput = document.getElementById("searchInput");
+      const clearExpiredButton = document.getElementById("clearExpiredButton");
+      const maxFileSize = 2 * 1024 * 1024 * 1024;
+      const databaseName = "up-you-library";
+      const storeName = "files";
+      let selectedFiles = [];
+      let savedFiles = [];
+      let isUploading = false;
+
+      function openDatabase() {
+        return new Promise((resolve, reject) => {
+          const request = indexedDB.open(databaseName, 1);
+          request.onupgradeneeded = () => {
+            const database = request.result;
+            if (!database.objectStoreNames.contains(storeName)) {
+              database.createObjectStore(storeName, { keyPath: "id" });
+            }
+          };
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error || new Error("Não foi possível abrir o armazenamento local."));
+          request.onblocked = () => reject(new Error("O armazenamento está ocupado por outra aba. Feche as outras abas do up.you e tente novamente."));
+        });
+      }
+
+      async function storeRequest(mode, action) {
+        const database = await openDatabase();
+        return new Promise((resolve, reject) => {
+          const transaction = database.transaction(storeName, mode);
+          const request = action(transaction.objectStore(storeName));
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error || new Error("Não foi possível acessar a biblioteca."));
+          transaction.onabort = () => reject(transaction.error || new Error("A operação na biblioteca foi cancelada."));
+          transaction.oncomplete = () => database.close();
+          transaction.onerror = () => database.close();
+        });
+      }
+
+      function formatSize(bytes) {
+        if (bytes === 0) return "0 B";
+        const units = ["B", "KB", "MB", "GB"];
+        const unitIndex = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+        return `${(bytes / (1024 ** unitIndex)).toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+      }
+
+      function showFeedback(message, isError) {
+        feedback.textContent = message;
+        feedback.className = `mt-3 text-sm ${isError ? "text-rose-300" : "text-slate-400"}`;
+        feedback.classList.remove("hidden");
+      }
+
+      function renderSelectedFiles() {
+        fileList.replaceChildren();
+        const total = selectedFiles.reduce((sum, file) => sum + file.size, 0);
+        fileCount.textContent = `${selectedFiles.length} ${selectedFiles.length === 1 ? "arquivo" : "arquivos"}`;
+        totalSize.textContent = formatSize(total);
+        fileSection.classList.toggle("hidden", selectedFiles.length === 0);
+        uploadButton.disabled = selectedFiles.length === 0 || isUploading;
+
+        selectedFiles.forEach((file, index) => {
+          const item = document.createElement("li");
+          item.className = "flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5";
+          const icon = document.createElement("span");
+          icon.className = "grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-slate-700/40 text-slate-400";
+          icon.innerHTML = '<svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" aria-hidden="true"><path d="M5.5 2.5h6l3.5 3.6v10a1.4 1.4 0 0 1-1.4 1.4H5.5a1.4 1.4 0 0 1-1.4-1.4V3.9a1.4 1.4 0 0 1 1.4-1.4Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M11.5 2.8v3.7h3.2M7 10h6m-6 3h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';
+          const info = document.createElement("div");
+          info.className = "min-w-0 flex-1";
+          const name = document.createElement("p");
+          name.className = "truncate text-sm text-slate-200";
+          name.textContent = file.name;
+          const size = document.createElement("p");
+          size.className = "mt-0.5 text-xs text-slate-500";
+          size.textContent = formatSize(file.size);
+          info.append(name, size);
+
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.className = "grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-500 transition hover:bg-white/[0.06] hover:text-slate-200";
+          remove.setAttribute("aria-label", `Remover ${file.name}`);
+          remove.innerHTML = '<svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" aria-hidden="true"><path d="m6 6 8 8m0-8-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+          remove.addEventListener("click", () => {
+            selectedFiles.splice(index, 1);
+            renderSelectedFiles();
+          });
+          item.append(icon, info, remove);
+          fileList.append(item);
+        });
+      }
+
+      function addFiles(fileListFromInput) {
+        const incoming = Array.from(fileListFromInput);
+        const oversized = incoming.filter((file) => file.size > maxFileSize);
+        const valid = incoming.filter((file) => file.size <= maxFileSize);
+        const existing = new Set(selectedFiles.map((file) => `${file.name}:${file.size}:${file.lastModified}`));
+        selectedFiles = selectedFiles.concat(valid.filter((file) => !existing.has(`${file.name}:${file.size}:${file.lastModified}`)));
+        renderSelectedFiles();
+        if (oversized.length) {
+          showFeedback(`${oversized.map((file) => file.name).join(", ")} excede${oversized.length === 1 ? "" : "m"} o limite de 2 GB.`, true);
+        }
+      }
+
+      function makeLibraryCard(record) {
+        const card = document.createElement("article");
+        card.className = "flex min-w-0 flex-col rounded-2xl border border-white/[0.07] bg-panel/80 p-4 transition hover:border-violet-400/25";
+        const top = document.createElement("div");
+        top.className = "flex items-start gap-3";
+        const icon = document.createElement("span");
+        icon.className = "grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-violet-400/10 text-violet-300";
+        icon.innerHTML = '<svg viewBox="0 0 20 20" class="h-5 w-5" fill="none" aria-hidden="true"><path d="M5.5 2.5h6l3.5 3.6v10a1.4 1.4 0 0 1-1.4 1.4H5.5a1.4 1.4 0 0 1-1.4-1.4V3.9a1.4 1.4 0 0 1 1.4-1.4Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M11.5 2.8v3.7h3.2M7 10h6m-6 3h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';
+        const details = document.createElement("div");
+        details.className = "min-w-0 flex-1";
+        const name = document.createElement("h3");
+        name.className = "truncate text-sm font-medium text-slate-100";
+        name.textContent = record.name;
+        name.title = record.name;
+        const type = document.createElement("p");
+        type.className = "mt-1 truncate text-xs text-slate-500";
+        type.textContent = record.type || "Arquivo";
+        details.append(name, type);
+        top.append(icon, details);
+
+        const metadata = document.createElement("div");
+        metadata.className = "mt-4 flex items-center justify-between border-t border-white/[0.06] pt-3 text-xs text-slate-500";
+        const size = document.createElement("span");
+        size.textContent = formatSize(record.size);
+        const expiry = document.createElement("span");
+        expiry.textContent = `Expira ${new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(record.expiresAt)}`;
+        metadata.append(size, expiry);
+
+        const actions = document.createElement("div");
+        actions.className = "mt-4 flex gap-2";
+        const download = document.createElement("button");
+        download.type = "button";
+        download.className = "flex-1 rounded-lg bg-violet-500/15 px-3 py-2 text-xs font-medium text-violet-200 transition hover:bg-violet-500/25";
+        download.textContent = "Baixar arquivo";
+        download.addEventListener("click", () => {
+          const url = URL.createObjectURL(record.blob);
+          const anchor = document.createElement("a");
+          anchor.href = url;
+          anchor.download = record.name;
+          anchor.click();
+          window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        });
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "rounded-lg border border-white/[0.08] px-3 py-2 text-xs text-slate-400 transition hover:border-rose-400/20 hover:text-rose-300";
+        remove.textContent = "Excluir";
+        remove.setAttribute("aria-label", `Excluir ${record.name}`);
+        remove.addEventListener("click", async () => {
+          try {
+            await storeRequest("readwrite", (store) => store.delete(record.id));
+            await refreshLibrary();
+          } catch (error) {
+            showFeedback(`Não foi possível excluir ${record.name}. ${error.message}`, true);
+          }
+        });
+        actions.append(download, remove);
+        card.append(top, metadata, actions);
+        return card;
+      }
+
+      async function refreshLibrary() {
+        const records = await storeRequest("readonly", (store) => store.getAll());
+        const now = Date.now();
+        const available = records.filter((record) => record.expiresAt > now);
+        const expired = records.filter((record) => record.expiresAt <= now);
+        if (expired.length) {
+          await storeRequest("readwrite", (store) => {
+            expired.forEach((record) => store.delete(record.id));
+            return store.getAll();
+          });
+        }
+        savedFiles = available.sort((a, b) => b.createdAt - a.createdAt);
+        renderLibrary();
+      }
+
+      function renderLibrary() {
+        const query = searchInput.value.trim().toLocaleLowerCase("pt-BR");
+        const filtered = savedFiles.filter((record) => record.name.toLocaleLowerCase("pt-BR").includes(query));
+        libraryGrid.replaceChildren(...filtered.map(makeLibraryCard));
+        libraryCount.textContent = `${savedFiles.length} ${savedFiles.length === 1 ? "arquivo disponível" : "arquivos disponíveis"}`;
+        clearExpiredButton.classList.toggle("hidden", savedFiles.length === 0);
+        emptyLibrary.classList.toggle("hidden", filtered.length > 0);
+        if (savedFiles.length === 0) {
+          emptyTitle.textContent = "Sua biblioteca está vazia";
+          emptyDescription.textContent = "Envie arquivos para eles aparecerem aqui.";
+        } else if (filtered.length === 0) {
+          emptyTitle.textContent = "Nenhum arquivo encontrado";
+          emptyDescription.textContent = "Tente buscar por outro nome.";
+        }
+      }
+
+      async function uploadFiles() {
+        if (selectedFiles.length === 0 || isUploading) return;
+        isUploading = true;
+        renderSelectedFiles();
+        buttonLabel.textContent = "Salvando arquivos...";
+        buttonIcon.classList.add("hidden");
+        showFeedback("Salvando os arquivos nesta biblioteca do navegador...", false);
+
+        try {
+          const expiresIn = Number(expiration.value);
+          const createdAt = Date.now();
+          const records = selectedFiles.map((file) => ({
+            id: crypto.randomUUID(),
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            createdAt,
+            expiresAt: createdAt + expiresIn * 1000,
+            blob: file,
+          }));
+          const database = await openDatabase();
+          await new Promise((resolve, reject) => {
+            const transaction = database.transaction(storeName, "readwrite");
+            const store = transaction.objectStore(storeName);
+            records.forEach((record) => store.put(record));
+            transaction.oncomplete = resolve;
+            transaction.onerror = () => reject(transaction.error || new Error("O navegador não conseguiu salvar os arquivos."));
+            transaction.onabort = () => reject(transaction.error || new Error("O armazenamento local pode estar cheio ou indisponível."));
+          });
+          database.close();
+          selectedFiles = [];
+          renderSelectedFiles();
+          await refreshLibrary();
+          showFeedback(`${records.length} ${records.length === 1 ? "arquivo salvo" : "arquivos salvos"} com sucesso.`, false);
+        } catch (error) {
+          showFeedback(`Não foi possível salvar os arquivos. ${error.message || "Verifique o espaço disponível no navegador."}`, true);
+        } finally {
+          isUploading = false;
+          buttonLabel.textContent = "Salvar arquivos";
+          buttonIcon.classList.remove("hidden");
+          uploadButton.disabled = selectedFiles.length === 0;
+        }
+      }
+
+      dropzone.addEventListener("click", () => fileInput.click());
+      dropzone.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          fileInput.click();
+        }
+      });
+      fileInput.addEventListener("change", (event) => {
+        addFiles(event.target.files);
+        fileInput.value = "";
+      });
+      clearButton.addEventListener("click", () => {
+        selectedFiles = [];
+        renderSelectedFiles();
+      });
+      ["dragenter", "dragover"].forEach((eventName) => {
+        dropzone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          dropzone.classList.add("drop-active");
+        });
+      });
+      ["dragleave", "drop"].forEach((eventName) => {
+        dropzone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          dropzone.classList.remove("drop-active");
+        });
+      });
+      dropzone.addEventListener("drop", (event) => addFiles(event.dataTransfer.files));
+      uploadButton.addEventListener("click", uploadFiles);
+      searchInput.addEventListener("input", renderLibrary);
+      clearExpiredButton.addEventListener("click", async () => {
+        try {
+          const records = await storeRequest("readonly", (store) => store.getAll());
+          const expired = records.filter((record) => record.expiresAt <= Date.now());
+          if (expired.length) {
+            await storeRequest("readwrite", (store) => {
+              expired.forEach((record) => store.delete(record.id));
+              return store.getAll();
+            });
+          }
+          await refreshLibrary();
+          showFeedback(`${expired.length} ${expired.length === 1 ? "arquivo expirado removido" : "arquivos expirados removidos"}.`, false);
+        } catch (error) {
+          showFeedback(`Não foi possível limpar os arquivos expirados. ${error.message}`, true);
+        }
+      });
+
+      refreshLibrary().catch((error) => {
+        libraryGrid.replaceChildren();
+        libraryCount.textContent = "Biblioteca indisponível";
+        emptyTitle.textContent = "Não foi possível abrir a biblioteca";
+        emptyDescription.textContent = error.message || "Verifique as permissões de armazenamento do navegador.";
+        emptyLibrary.classList.remove("hidden");
+      });
+    </script>
+  </body>
+</html>
