@@ -78,7 +78,7 @@
     </header>
 
     <main class="mx-auto w-full max-w-4xl px-6 pb-16 pt-12 sm:px-8 sm:pt-20">
-      <section class="text-center">
+      <section class="text-center animate animate-pulse">
         <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-violet-400/20 bg-violet-400/[0.07] px-3.5 py-1.5 text-xs font-medium text-violet-200">
           <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" aria-hidden="true">
             <path d="M10 2.5 12 7l4.5 2-4.5 2-2 4.5L8 11l-4.5-2L8 7l2-4.5Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.4" />
@@ -92,6 +92,41 @@
         <p class="mx-auto mt-5 max-w-xl text-base leading-7 text-slate-400 sm:text-lg">
           Envie seus arquivos e encontre tudo em uma biblioteca temporária. Simples, organizado e sem cadastro.
         </p>
+      </section>
+
+      <section class="mt-10 rounded-3xl border border-white/[0.09] bg-panel/90 p-4 shadow-2xl shadow-black/30 backdrop-blur sm:mt-12 sm:p-7" aria-label="Enviar arquivos">
+        <div class="flex flex-col items-center justify-center text-center">
+
+          <div class="flex justify-center mb-6 inline-flex items-center gap-2 rounded-full border border-violet-400/20 bg-violet-400/[0.07] px-3.5 py-1.5 text-xs font-medium text-violet-200">
+            <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" aria-hidden="true">
+              <path d="M10 2.5 12 7l4.5 2-4.5 2-2 4.5L8 11l-4.5-2L8 7l2-4.5Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.4" />
+            </svg>
+            Faça CTRL+C e CTRL+V online para enviar texto. Sem cadastro.
+          </div>
+        </div>
+        <div class=" flex gap-3">
+          <label class="relative flex min-h-12 w-full items-center justify-between gap-3 rounded-xl border border-white/[0.08] bg-white/[0.025] px-4 text-slate-200 transition hover:border-violet-400/30">
+            <span class="text-sm text-slate-400">Tipo</span>
+            <div class="relative flex-1">
+              <select name="requestType" id="requestType" class="w-full appearance-none bg-transparent pr-6 text-right text-sm text-slate-200 outline-none">
+                <option value="enviar" class="bg-slate-900 text-slate-100">Enviar Texto</option>
+                <option value="recuperar" class="bg-slate-900 text-slate-100">Recuperar Texto</option>
+              </select>
+              <svg viewBox="0 0 20 20" class="pointer-events-none absolute inset-y-0 right-0 my-auto h-4 w-4 text-slate-400" fill="none" aria-hidden="true">
+                <path d="M5.5 7.5 10 12l4.5-4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </div>
+          </label>
+
+          <label class="flex min-h-12 w-full items-center justify-between gap-3 rounded-xl border border-white/[0.08] bg-white/[0.025] px-4">
+            <span class="text-sm text-slate-400">Email</span>
+            <input id="fileEmail" type="email" autocomplete="email" placeholder="Seu email" class="w-44 bg-transparent text-right text-sm text-slate-200 outline-none placeholder:text-slate-600" />
+          </label>
+          <label class="flex min-h-12 w-full items-center justify-between gap-3 rounded-xl border border-white/[0.08] bg-white/[0.025] px-4">
+            <span class="text-sm text-slate-400 w-full">Oque você quer enviar?</span>
+            <input id="copy-text" type="text" placeholder="Envie seu texto aqui" class="w-44 bg-transparent text-right text-sm text-slate-200 outline-none placeholder:text-slate-600" />
+          </label>
+        </div>
       </section>
 
       <section class="mt-10 rounded-3xl border border-white/[0.09] bg-panel/90 p-4 shadow-2xl shadow-black/30 backdrop-blur sm:mt-12 sm:p-7" aria-label="Enviar arquivos">
@@ -125,22 +160,12 @@
           </div>
         </div>
 
-        <div class="mt-5 grid gap-3 sm:grid-cols-[1fr_auto]">
-          <label class="flex min-h-12 items-center justify-between rounded-xl border border-white/[0.08] bg-white/[0.025] px-4">
-            <span class="flex items-center gap-2.5 text-sm text-slate-400">
-              <svg viewBox="0 0 20 20" class="h-4 w-4 text-slate-500" fill="none" aria-hidden="true">
-                <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.4" />
-                <path d="M10 6v4l2.5 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
-              </svg>
-              Os arquivos expiram em
-            </span>
-            <select id="expiration" class="bg-transparent text-sm font-medium text-slate-200 outline-none">
-              <option value="3600" class="bg-panel">1 hora</option>
-              <option value="86400" class="bg-panel" selected>24 horas</option>
-              <option value="604800" class="bg-panel">7 dias</option>
-            </select>
+        <div class="mt-5 flex gap-3">         
+          <label class="flex min-h-12 w-full items-center justify-between gap-3 rounded-xl border border-white/[0.08] bg-white/[0.025] px-4">
+            <span class="text-sm text-slate-400">Senha (opcional)</span>
+            <input id="filePassword" type="password" minlength="4" autocomplete="new-password" placeholder="Mínimo 4 caracteres" class="w-44 bg-transparent text-right text-sm text-slate-200 outline-none placeholder:text-slate-600" />
           </label>
-          <button id="uploadButton" type="button" disabled class="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-violet-500 px-6 text-sm font-semibold text-white shadow-lg shadow-violet-900/20 transition hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none">
+          <button id="uploadButton" type="button" disabled class="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-violet-500 px-6 text-sm font-semibold text-white shadow-lg shadow-violet-900/20 transition hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none sm:col-span-2">
             <span id="buttonLabel">Salvar arquivos</span>
             <svg id="buttonIcon" viewBox="0 0 20 20" class="h-4 w-4" fill="none" aria-hidden="true">
               <path d="M10 4v11m0 0-4-4m4 4 4-4M4 16v1h12v-1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
@@ -248,6 +273,7 @@
       const clearButton = document.getElementById("clearButton");
       const feedback = document.getElementById("feedback");
       const expiration = document.getElementById("expiration");
+      const filePassword = document.getElementById("filePassword");
       const libraryGrid = document.getElementById("libraryGrid");
       const libraryCount = document.getElementById("libraryCount");
       const emptyLibrary = document.getElementById("emptyLibrary");
@@ -301,6 +327,27 @@
         feedback.textContent = message;
         feedback.className = `mt-3 text-sm ${isError ? "text-rose-300" : "text-slate-400"}`;
         feedback.classList.remove("hidden");
+      }
+
+      function bytesToHex(bytes) {
+        return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+      }
+
+      function hexToBytes(hex) {
+        return new Uint8Array(hex.match(/.{2}/g).map((byte) => parseInt(byte, 16)));
+      }
+
+      async function hashPassword(password, salt) {
+        const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
+        const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt, iterations: 120000, hash: "SHA-256" }, key, 256);
+        return new Uint8Array(bits);
+      }
+
+      function hashesMatch(actual, expected) {
+        if (actual.length !== expected.length) return false;
+        let difference = 0;
+        for (let index = 0; index < actual.length; index += 1) difference |= actual[index] ^ expected[index];
+        return difference === 0;
       }
 
       function renderSelectedFiles() {
@@ -386,8 +433,22 @@
         const download = document.createElement("button");
         download.type = "button";
         download.className = "flex-1 rounded-lg bg-violet-500/15 px-3 py-2 text-xs font-medium text-violet-200 transition hover:bg-violet-500/25";
-        download.textContent = "Baixar arquivo";
-        download.addEventListener("click", () => {
+        download.textContent = record.passwordHash ? "🔒 Baixar arquivo" : "Baixar arquivo";
+        download.addEventListener("click", async () => {
+          if (record.passwordHash) {
+            const password = window.prompt(`Digite a senha para baixar ${record.name}:`);
+            if (password === null) return;
+            try {
+              const enteredHash = await hashPassword(password, hexToBytes(record.passwordSalt));
+              if (!hashesMatch(enteredHash, hexToBytes(record.passwordHash))) {
+                showFeedback("Senha incorreta. O arquivo não foi baixado.", true);
+                return;
+              }
+            } catch (error) {
+              showFeedback(`Não foi possível verificar a senha. ${error.message}`, true);
+              return;
+            }
+          }
           const url = URL.createObjectURL(record.blob);
           const anchor = document.createElement("a");
           anchor.href = url;
@@ -446,6 +507,12 @@
 
       async function uploadFiles() {
         if (selectedFiles.length === 0 || isUploading) return;
+        const password = filePassword.value;
+        if (password && password.length < 4) {
+          showFeedback("A senha deve ter pelo menos 4 caracteres.", true);
+          filePassword.focus();
+          return;
+        }
         isUploading = true;
         renderSelectedFiles();
         buttonLabel.textContent = "Salvando arquivos...";
@@ -455,14 +522,22 @@
         try {
           const expiresIn = Number(expiration.value);
           const createdAt = Date.now();
-          const records = selectedFiles.map((file) => ({
-            id: crypto.randomUUID(),
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            createdAt,
-            expiresAt: createdAt + expiresIn * 1000,
-            blob: file,
+          const records = await Promise.all(selectedFiles.map(async (file) => {
+            const record = {
+              id: crypto.randomUUID(),
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              createdAt,
+              expiresAt: createdAt + expiresIn * 1000,
+              blob: file,
+            };
+            if (password) {
+              const salt = crypto.getRandomValues(new Uint8Array(16));
+              record.passwordSalt = bytesToHex(salt);
+              record.passwordHash = bytesToHex(await hashPassword(password, salt));
+            }
+            return record;
           }));
           const database = await openDatabase();
           await new Promise((resolve, reject) => {
@@ -475,6 +550,7 @@
           });
           database.close();
           selectedFiles = [];
+          filePassword.value = "";
           renderSelectedFiles();
           await refreshLibrary();
           showFeedback(`${records.length} ${records.length === 1 ? "arquivo salvo" : "arquivos salvos"} com sucesso.`, false);
