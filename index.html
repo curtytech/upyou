@@ -348,6 +348,7 @@
             isTextRequestLoading: false,
             textResult: "",
             textFeedback: { message: "", isError: false },
+            bucketData: [],
           };
         },
         computed: {
@@ -356,13 +357,63 @@
             return this.savedFiles.filter((record) => record.name.toLocaleLowerCase("pt-BR").includes(query));
           },
         },
-        methods: {      
-          
-         
+        methods: {
+          getUserTextData() {
+            return {
+              email: this.email.trim().toLowerCase(),
+              text: this.textContent.trim(),
+            };
+          },
+
+          showTextFeedback(message, isError = false) {
+            this.textFeedback = { message, isError };
+          },
+
+          async saveCopyAndPaste(email, text) {
+            const response = await fetch(onlineStorageApiUrl, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              },
+              body: JSON.stringify({ key: email, value: text, bucket: onlineStorageBucket }),
+            });
+            if (!response.ok) {
+              throw new Error(await response.text() || `A API respondeu com status ${response.status}.`);
+            }
+            return response.headers.get("content-type")?.includes("application/json")
+              ? response.json()
+              : response.text();
+          },
+
+          async getCopyAndPaste(email) {
+            const response = await fetch(`${onlineStorageApiUrl}getkey/${encodeURIComponent(onlineStorageBucket)}/${encodeURIComponent(email)}`, {
+              headers: { Accept: "application/json" },
+            });
+            if (!response.ok) {
+              throw new Error(await response.text() || `A API respondeu com status ${response.status}.`);
+            }
+            return response.headers.get("content-type")?.includes("application/json")
+              ? response.json()
+              : response.text();
+          },
+
+          async listBucketData() {
+            const response = await fetch(`${onlineStorageApiUrl}getbucket/${encodeURIComponent(onlineStorageBucket)}`, {
+              headers: { Accept: "application/json" },
+            });
+            if (!response.ok) {
+              throw new Error(await response.text() || `A API respondeu com status ${response.status}.`);
+            }
+            const data = await response.json();
+            this.bucketData = Array.isArray(data) ? data : data.data || data.values || [];
+            return data;
+          },
+
           async submitTextRequest() {
             if (this.isTextRequestLoading) return;
-            const email = this.email.trim().toLowerCase();
-            const content = this.textContent.trim();
+            const { email, text: content } = this.getUserTextData();
+            console.log("[up.you] Dados dos inputs:", { email, text: content });
             if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
               this.showTextFeedback("Informe um email válido para continuar.", true);
               return;
@@ -374,51 +425,28 @@
             this.isTextRequestLoading = true;
             this.textResult = "";
             this.showTextFeedback("");
-            const objectUrl = `${onlineStorageApiUrl}/buckets/${encodeURIComponent(onlineStorageBucket)}/objects/${encodeURIComponent(email)}`;
             try {
-              const response = await fetch(objectUrl, {
-                method: this.textMode === "enviar" ? "PUT" : "GET",
-                headers: this.textMode === "enviar"
-                  ? { "Content-Type": "text/plain; charset=UTF-8", Accept: "text/plain, application/json" }
-                  : { Accept: "text/plain, application/json" },
-                ...(this.textMode === "enviar" ? { body: content } : {}),
-              });
-              if (!response.ok) {
-                const errorBody = await response.text();
-                throw new Error(errorBody || `A API respondeu com status ${response.status}.`);
-              }
               if (this.textMode === "enviar") {
+                await this.saveCopyAndPaste(email, content);
                 this.showTextFeedback("Texto enviado com sucesso.");
                 this.textContent = "";
               } else {
-                const responseType = response.headers.get("content-type") || "";
-                const value = responseType.includes("application/json")
-                  ? await response.json()
-                  : await response.text();
-                const retrievedText = typeof value === "string"
-                  ? value
-                  : value && typeof value === "object"
-                    ? (value.textContent ?? value.value ?? "")
-                    : "";
-                if (!retrievedText) {
+                const data = await this.getCopyAndPaste(email);
+                this.textResult = typeof data === "string"
+                  ? data
+                  : data?.value ?? data?.data?.value ?? "";
+                if (!this.textResult) {
                   throw new Error("A API não retornou um texto para este email.");
                 }
-                this.textResult = retrievedText;
                 this.showTextFeedback("Texto consultado com sucesso.");
               }
+              await this.listBucketData();
             } catch (error) {
               this.showTextFeedback(`Não foi possível ${this.textMode === "enviar" ? "enviar" : "consultar"} o texto. ${error.message || "Verifique sua conexão e tente novamente."}`, true);
             } finally {
               this.isTextRequestLoading = false;
             }
           },
-         
-          
-        
-          
-        },
-        mounted() {
-          this.refreshLibrary();
         },
       }).mount("#app");
     </script>
