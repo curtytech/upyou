@@ -326,8 +326,8 @@
       const maxFileSize = 2 * 1024 * 1024 * 1024;
       const databaseName = "up-you-library";
       const storeName = "files";
+      const onlineStorageApiUrl = "https://onlinestorage.you.tec.br/api/";
       const onlineStorageBucket = "upyou-copy-paste";
-      const onlineStorageApiUrl = "https://onlinestorage.you.tec.br";
 
       createApp({
         data() {
@@ -356,57 +356,9 @@
             return this.savedFiles.filter((record) => record.name.toLocaleLowerCase("pt-BR").includes(query));
           },
         },
-        methods: {
-          openDatabase() {
-            return new Promise((resolve, reject) => {
-              const request = indexedDB.open(databaseName, 1);
-              request.onupgradeneeded = () => {
-                const database = request.result;
-                if (!database.objectStoreNames.contains(storeName)) {
-                  database.createObjectStore(storeName, { keyPath: "id" });
-                }
-              };
-              request.onsuccess = () => resolve(request.result);
-              request.onerror = () => reject(request.error || new Error("Não foi possível abrir o armazenamento local."));
-              request.onblocked = () => reject(new Error("O armazenamento está ocupado por outra aba. Feche as outras abas do up.you e tente novamente."));
-            });
-          },
-          async storeRequest(mode, action) {
-            const database = await this.openDatabase();
-            return new Promise((resolve, reject) => {
-              let transaction;
-              try {
-                transaction = database.transaction(storeName, mode);
-                const request = action(transaction.objectStore(storeName));
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = () => reject(request.error || new Error("Não foi possível acessar a biblioteca."));
-                transaction.onabort = () => reject(transaction.error || new Error("A operação na biblioteca foi cancelada."));
-                transaction.oncomplete = () => database.close();
-                transaction.onerror = () => database.close();
-              } catch (error) {
-                database.close();
-                reject(error);
-              }
-            });
-          },
-          formatSize(bytes) {
-            if (bytes === 0) return "0 B";
-            const units = ["B", "KB", "MB", "GB"];
-            const unitIndex = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
-            return `${(bytes / (1024 ** unitIndex)).toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
-          },
-          formatDate(timestamp) {
-            return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(timestamp);
-          },
-          fileKey(file) {
-            return `${file.name}:${file.size}:${file.lastModified}`;
-          },
-          showFeedback(message, isError = false) {
-            this.feedback = { message, isError };
-          },
-          showTextFeedback(message, isError = false) {
-            this.textFeedback = { message, isError };
-          },
+        methods: {      
+          
+         
           async submitTextRequest() {
             if (this.isTextRequestLoading) return;
             const email = this.email.trim().toLowerCase();
@@ -460,149 +412,10 @@
               this.isTextRequestLoading = false;
             }
           },
-          bytesToHex(bytes) {
-            return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
-          },
-          hexToBytes(hex) {
-            return new Uint8Array(hex.match(/.{2}/g).map((byte) => parseInt(byte, 16)));
-          },
-          async hashPassword(password, salt) {
-            const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
-            const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt, iterations: 120000, hash: "SHA-256" }, key, 256);
-            return new Uint8Array(bits);
-          },
-          hashesMatch(actual, expected) {
-            if (actual.length !== expected.length) return false;
-            let difference = 0;
-            for (let index = 0; index < actual.length; index += 1) difference |= actual[index] ^ expected[index];
-            return difference === 0;
-          },
-          addFiles(fileList) {
-            const incoming = Array.from(fileList);
-            const oversized = incoming.filter((file) => file.size > maxFileSize);
-            const existing = new Set(this.selectedFiles.map((file) => this.fileKey(file)));
-            const validFiles = incoming.filter((file) => file.size <= maxFileSize && !existing.has(this.fileKey(file)));
-            this.selectedFiles.push(...validFiles.map((file) => markRaw(file)));
-            if (oversized.length) {
-              this.showFeedback(`${oversized.map((file) => file.name).join(", ")} excede${oversized.length === 1 ? "" : "m"} o limite de 2 GB.`, true);
-            } else if (validFiles.length) {
-              this.showFeedback("", false);
-            }
-          },
-          handleFileInput(event) {
-            this.addFiles(event.target.files);
-            event.target.value = "";
-          },
-          handleDrop(event) {
-            this.isDragging = false;
-            this.addFiles(event.dataTransfer.files);
-          },
-          async refreshLibrary() {
-            this.libraryLoading = true;
-            this.libraryError = "";
-            try {
-              const records = await this.storeRequest("readonly", (store) => store.getAll());
-              const now = Date.now();
-              const available = records.filter((record) => record.expiresAt > now);
-              const expired = records.filter((record) => record.expiresAt <= now);
-              if (expired.length) {
-                await this.storeRequest("readwrite", (store) => {
-                  expired.forEach((record) => store.delete(record.id));
-                  return store.getAll();
-                });
-              }
-              this.savedFiles = available
-                .sort((a, b) => b.createdAt - a.createdAt)
-                .map((record) => ({ ...record, blob: markRaw(record.blob) }));
-            } catch (error) {
-              this.libraryError = error.message || "Verifique as permissões de armazenamento do navegador.";
-              this.showFeedback(`Não foi possível carregar a biblioteca. ${this.libraryError}`, true);
-            } finally {
-              this.libraryLoading = false;
-            }
-          },
-          async uploadFiles() {
-            if (this.selectedFiles.length === 0 || this.isUploading) return;
-            if (this.filePassword && this.filePassword.length < 4) {
-              this.showFeedback("A senha deve ter pelo menos 4 caracteres.", true);
-              this.$refs.filePassword?.focus();
-              return;
-            }
-            this.isUploading = true;
-            this.showFeedback("Salvando os arquivos nesta biblioteca do navegador...");
-            const filesToSave = [...this.selectedFiles];
-            try {
-              const createdAt = Date.now();
-              const records = await Promise.all(filesToSave.map(async (file) => {
-                const record = {
-                  id: crypto.randomUUID(),
-                  name: file.name,
-                  size: file.size,
-                  type: file.type,
-                  createdAt,
-                  expiresAt: createdAt + this.expirationSeconds * 1000,
-                  blob: file,
-                };
-                if (this.filePassword) {
-                  const salt = crypto.getRandomValues(new Uint8Array(16));
-                  record.passwordSalt = this.bytesToHex(salt);
-                  record.passwordHash = this.bytesToHex(await this.hashPassword(this.filePassword, salt));
-                }
-                return record;
-              }));
-              const database = await this.openDatabase();
-              try {
-                await new Promise((resolve, reject) => {
-                  const transaction = database.transaction(storeName, "readwrite");
-                  records.forEach((record) => transaction.objectStore(storeName).put(record));
-                  transaction.oncomplete = resolve;
-                  transaction.onerror = () => reject(transaction.error || new Error("O navegador não conseguiu salvar os arquivos."));
-                  transaction.onabort = () => reject(transaction.error || new Error("O armazenamento local pode estar cheio ou indisponível."));
-                });
-              } finally {
-                database.close();
-              }
-              this.selectedFiles = [];
-              this.filePassword = "";
-              await this.refreshLibrary();
-              this.showFeedback(`${records.length} ${records.length === 1 ? "arquivo salvo" : "arquivos salvos"} com sucesso.`);
-            } catch (error) {
-              this.showFeedback(`Não foi possível salvar os arquivos. ${error.message || "Verifique o espaço disponível no navegador."}`, true);
-            } finally {
-              this.isUploading = false;
-            }
-          },
-          async downloadFile(record) {
-            if (record.passwordHash) {
-              const password = window.prompt(`Digite a senha para baixar ${record.name}:`);
-              if (password === null) return;
-              try {
-                const enteredHash = await this.hashPassword(password, this.hexToBytes(record.passwordSalt));
-                if (!this.hashesMatch(enteredHash, this.hexToBytes(record.passwordHash))) {
-                  this.showFeedback("Senha incorreta. O arquivo não foi baixado.", true);
-                  return;
-                }
-              } catch (error) {
-                this.showFeedback(`Não foi possível verificar a senha. ${error.message}`, true);
-                return;
-              }
-            }
-            const url = URL.createObjectURL(record.blob);
-            const anchor = document.createElement("a");
-            anchor.href = url;
-            anchor.download = record.name;
-            anchor.click();
-            window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-          },
-          async removeFile(record) {
-            try {
-              await this.storeRequest("readwrite", (store) => store.delete(record.id));
-              await this.refreshLibrary();
-              this.showFeedback(`Arquivo ${record.name} excluído.`);
-            } catch (error) {
-              this.showFeedback(`Não foi possível excluir ${record.name}. ${error.message}`, true);
-            }
-          },
+         
+          
+        
+          
         },
         mounted() {
           this.refreshLibrary();
