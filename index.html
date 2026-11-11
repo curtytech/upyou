@@ -164,7 +164,7 @@
           </span>
           <p class="text-base font-medium text-slate-100">Solte seus arquivos aqui</p>
           <p class="mt-1.5 text-sm text-slate-500">ou <span class="text-violet-300 underline underline-offset-4">clique para procurar</span> no seu dispositivo</p>
-          <p class="mt-4 text-xs text-slate-600">Qualquer formato <span class="mx-1.5">·</span> Até 2 GB por arquivo</p>
+          <p class="mt-4 text-xs text-slate-600">Qualquer formato <span class="mx-1.5">·</span> Menos de 1 GiB por arquivo</p>
         </div>
 
         <div id="fileSection" v-if="selectedFiles.length" class="mt-5">
@@ -323,11 +323,13 @@
     </div>
     <script>
       const { createApp, markRaw } = Vue;
-      const maxFileSize = 2 * 1024 * 1024 * 1024;
+      const maxFileSize = 1024 * 1024 * 1024;
       const databaseName = "up-you-library";
       const storeName = "files";
       const onlineStorageApiUrl = "https://onlinestorage.you.tec.br/api/";
+      const filesApiUrl = "https://onlinestorage.you.tec.br/files";
       const onlineStorageBucket = "upyou-copy-paste";
+      const adminAuth = "curtytech";
 
       createApp({
         data() {
@@ -357,7 +359,129 @@
             return this.savedFiles.filter((record) => record.name.toLocaleLowerCase("pt-BR").includes(query));
           },
         },
+        mounted() {
+          this.loadFiles();
+        },
         methods: {
+          fileKey(file) {
+            return `${file.name}-${file.size}-${file.lastModified}`;
+          },
+
+          formatSize(bytes) {
+            if (!Number.isFinite(bytes) || bytes < 0) return "0 B";
+            if (bytes < 1024) return `${bytes} B`;
+            const units = ["KiB", "MiB", "GiB"];
+            let value = bytes;
+            let unitIndex = -1;
+            do {
+              value /= 1024;
+              unitIndex += 1;
+            } while (value >= 1024 && unitIndex < units.length - 1);
+            return `${value.toFixed(value >= 10 ? 0 : 1)} ${units[unitIndex]}`;
+          },
+
+          formatDate(value) {
+            if (!value) return "indisponível";
+            const date = new Date(value);
+            return Number.isNaN(date.getTime()) ? "indisponível" : date.toLocaleDateString("pt-BR");
+          },
+
+          handleFileInput(event) {
+            this.selectedFiles = [...event.target.files];
+            event.target.value = "";
+          },
+
+          handleDrop(event) {
+            this.isDragging = false;
+            this.selectedFiles = [...event.dataTransfer.files];
+          },
+
+          normalizeUpload(upload) {
+            return {
+              id: upload.id,
+              name: upload.originalName || upload.name || "Arquivo sem nome",
+              size: Number(upload.size) || 0,
+              type: upload.contentType || upload.type || "Arquivo",
+              expiresAt: upload.expiresAt || upload.expires_at,
+            };
+          },
+
+          async loadFiles() {
+            this.libraryLoading = true;
+            this.libraryError = "";
+
+            try {
+              if (!adminAuth) {
+                console.error("[up.you] ADMIN_AUTH não configurado. Verifique a variável window.__UPYOU_CONFIG__.adminAuth.");
+                throw new Error("Configure ADMIN_AUTH para carregar a biblioteca.");
+              }
+              const response = await fetch(`${filesApiUrl}/getall`, {
+                headers: {
+                  Accept: "application/json",
+                  "admin-auth": adminAuth,
+                },
+              });
+
+              if (!response.ok) {
+                throw new Error(await response.text() || `A API respondeu com status ${response.status}.`);
+              }
+              const data = await response.json();
+              this.savedFiles = (Array.isArray(data) ? data : data.uploads || []).map(this.normalizeUpload);
+            } catch (error) {
+              this.libraryError = error.message || "Verifique a configuração e tente novamente.";
+              console.error("[up.you] Erro ao carregar biblioteca:", error);
+            } finally {
+              this.libraryLoading = false;
+            }
+          },
+
+          async uploadFile(file) {
+            if (file.size >= maxFileSize) {
+              throw new Error(`"${file.name}" excede o limite de 1 GiB.`);
+            }
+            const formData = new FormData();
+            formData.append("file", file, file.name);
+            const response = await fetch(filesApiUrl, {
+              method: "POST",
+              body: formData,
+            });
+            if (!response.ok) {
+              throw new Error(await response.text() || `A API respondeu com status ${response.status}.`);
+            }
+            return response.json();
+          },
+
+          async uploadFiles() {
+            if (this.isUploading || !this.selectedFiles.length) return;
+            this.isUploading = true;
+            this.feedback = { message: "", isError: false };
+            try {
+              await Promise.all(this.selectedFiles.map((file) => this.uploadFile(file)));
+              this.selectedFiles = [];
+              this.feedback = { message: "Arquivos enviados com sucesso.", isError: false };
+              await this.loadFiles();
+            } catch (error) {
+              this.feedback = {
+                message: `Não foi possível enviar os arquivos. ${error.message || "Verifique sua conexão e tente novamente."}`,
+                isError: true,
+              };
+            } finally {
+              this.isUploading = false;
+            }
+          },
+
+          downloadFile(record) {
+            if (!record.id) {
+              this.feedback = { message: "Este arquivo não possui um identificador para download.", isError: true };
+              return;
+            }
+            window.open(`${filesApiUrl}/${encodeURIComponent(record.id)}`, "_blank", "noopener");
+          },
+
+          removeFile() {
+            this.feedback = { message: "A API de arquivos não disponibiliza exclusão.", isError: true };
+          },
+
           getUserTextData() {
             return {
               email: this.email.trim().toLowerCase(),
