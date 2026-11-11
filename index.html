@@ -261,7 +261,6 @@
             </div>
             <div class="mt-4 flex gap-2">
               <button type="button" class="flex-1 rounded-lg bg-violet-500/15 px-3 py-2 text-xs font-medium text-violet-200 transition hover:bg-violet-500/25" @click="downloadFile(record)">{{ record.passwordHash ? "🔒 Baixar arquivo" : "Baixar arquivo" }}</button>
-              <button type="button" class="rounded-lg border border-white/[0.08] px-3 py-2 text-xs text-slate-400 transition hover:border-rose-400/20 hover:text-rose-300" :aria-label="`Excluir ${record.name}`" @click="removeFile(record)">Excluir</button>
             </div>
           </article>
         </div>
