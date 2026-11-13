@@ -9,6 +9,7 @@
       content="up.you — uma forma simples e temporária de compartilhar arquivos."
     />
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
     
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4329166318141941" crossorigin="anonymous"></script>
     <meta name="google-adsense-account" content="ca-pub-4329166318141941"></meta>
@@ -385,6 +386,7 @@
               size: Number(upload.size) || 0,
               type: upload.contentType || upload.type || "Arquivo",
               expiresAt: upload.expiresAt || upload.expires_at,
+              passwordHash: upload.passwordHash || upload.password || "",
             };
           },
 
@@ -419,16 +421,18 @@
             }
           },
 
-          async uploadFile(file) {
+          async uploadFile(file, passwordHash) {
             if (file.size >= maxFileSize) {
               throw new Error(`"${file.name}" excede o limite de 1 GiB.`);
             }
             const formData = new FormData();
             formData.append("file", file, file.name);
+            if (passwordHash) formData.append("password", passwordHash);
             const response = await fetch(filesApiUrl, {
               method: "POST",
               body: formData,
             });
+            console.log("[up.you] Resposta do upload de arquivo:", formData, response);
             if (!response.ok) {
               throw new Error(await response.text() || `A API respondeu com status ${response.status}.`);
             }
@@ -437,11 +441,18 @@
 
           async uploadFiles() {
             if (this.isUploading || !this.selectedFiles.length) return;
+            const password = this.filePassword;
+            if (password && password.length < 4) {
+              this.feedback = { message: "A senha deve ter pelo menos 4 caracteres.", isError: true };
+              return;
+            }
             this.isUploading = true;
             this.feedback = { message: "", isError: false };
             try {
-              await Promise.all(this.selectedFiles.map((file) => this.uploadFile(file)));
+              const passwordHash = password ? await this.hashPassword(password) : "";
+              await Promise.all(this.selectedFiles.map((file) => this.uploadFile(file, passwordHash)));
               this.selectedFiles = [];
+              this.filePassword = "";
               this.feedback = { message: "Arquivos enviados com sucesso.", isError: false };
               await this.loadFiles();
             } catch (error) {
@@ -454,10 +465,39 @@
             }
           },
 
+          async hashPassword(password) {
+            const bcrypt = window.dcodeIO && window.dcodeIO.bcrypt;
+            if (!bcrypt) throw new Error("Não foi possível carregar o recurso de proteção por senha.");
+            return new Promise((resolve, reject) => {
+              bcrypt.hash(password, 10, (error, hash) => {
+                if (error) reject(error);
+                else resolve(hash);
+              });
+            });
+          },
+
           downloadFile(record) {
             if (!record.id) {
               this.feedback = { message: "Este arquivo não possui um identificador para download.", isError: true };
               return;
+            }
+            if (record.passwordHash) {
+              const password = window.prompt("Este arquivo está protegido. Digite a senha para baixar:");
+              if (password === null) return;
+              const bcrypt = window.dcodeIO && window.dcodeIO.bcrypt;
+              if (!bcrypt) {
+                this.feedback = { message: "Não foi possível carregar o recurso de validação da senha.", isError: true };
+                return;
+              }
+              try {
+                if (!bcrypt.compareSync(password, record.passwordHash)) {
+                  this.feedback = { message: "Senha incorreta. O arquivo não foi baixado.", isError: true };
+                  return;
+                }
+              } catch (error) {
+                this.feedback = { message: `Não foi possível validar a senha. ${error.message || "Tente novamente."}`, isError: true };
+                return;
+              }
             }
             window.open(`${filesApiUrl}/${encodeURIComponent(record.id)}`, "_blank", "noopener");
           },
